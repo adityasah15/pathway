@@ -47,6 +47,14 @@ services:
       DB_USERNAME: root
       DB_PASSWORD: ${DB_PASSWORD:-placement_dev_password}
       ANALYTICS_SERVICE_URL: http://analytics:5000
+      JWT_SECRET: ${JWT_SECRET:-local-dev-secret-key-change-me-32bytes!!}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-3600000}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-ChangeMe123!}
+      VIEWER_USERNAME: ${VIEWER_USERNAME:-viewer}
+      VIEWER_PASSWORD: ${VIEWER_PASSWORD:-viewer123}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-demo}
+      APP_DEMO_SEED: ${APP_DEMO_SEED:-true}
     ports:
       - "8080:8080"
     restart: unless-stopped

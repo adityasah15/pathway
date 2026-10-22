@@ -124,4 +124,11 @@ class SecurityTest {
     void landingPageIsPublic() throws Exception {
         mvc.perform(get("/")).andExpect(status().isOk());
     }
+
+    @Test
+    void healthEndpointIsPublic() throws Exception {
+        mvc.perform(get("/actuator/health"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"));
+    }
 }

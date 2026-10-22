@@ -45,8 +45,9 @@ public class SecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .logout(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/index.html", "/styles.css", "/dashboard.css", "/app.js",
-                                "/vendor/**", "/favicon.ico", "/error", "/auth/login").permitAll()
+                        .requestMatchers("/", "/index.html", "/styles.css", "/dashboard.css", "/fonts.css", "/app.js",
+                                "/vendor/**", "/fonts/**", "/favicon.ico", "/error", "/auth/login",
+                                "/actuator/health", "/actuator/health/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/**").hasAnyRole("ADMIN", "VIEWER")
                         .requestMatchers("/api/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
