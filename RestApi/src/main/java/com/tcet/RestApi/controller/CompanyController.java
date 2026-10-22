@@ -1,7 +1,7 @@
 package com.tcet.RestApi.controller;
 
 import com.tcet.RestApi.model.Company;
-import com.tcet.RestApi.repositorys.CompanyRepository;
+import com.tcet.RestApi.repositories.CompanyRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

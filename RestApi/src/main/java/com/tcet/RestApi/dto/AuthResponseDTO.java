@@ -1,4 +1,4 @@
-package com.tcet.RestApi.modeldto;
+package com.tcet.RestApi.dto;
 
 public record AuthResponseDTO(
         String token,

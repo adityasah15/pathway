@@ -1,6 +1,6 @@
 package com.tcet.RestApi.controller;
 
-import com.tcet.RestApi.repositorys.*;
+import com.tcet.RestApi.repositories.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.bind.annotation.*;

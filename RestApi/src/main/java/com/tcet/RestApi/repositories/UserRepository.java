@@ -1,4 +1,4 @@
-package com.tcet.RestApi.repositorys;
+package com.tcet.RestApi.repositories;
 
 import com.tcet.RestApi.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;

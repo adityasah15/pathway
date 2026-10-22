@@ -1,8 +1,8 @@
 package com.tcet.RestApi.controller;
 
 import com.tcet.RestApi.model.JobOpening;
-import com.tcet.RestApi.repositorys.CompanyRepository;
-import com.tcet.RestApi.repositorys.JobOpeningRepository;
+import com.tcet.RestApi.repositories.CompanyRepository;
+import com.tcet.RestApi.repositories.JobOpeningRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

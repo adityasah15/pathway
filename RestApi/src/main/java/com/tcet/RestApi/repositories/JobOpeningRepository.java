@@ -1,4 +1,4 @@
-package com.tcet.RestApi.repositorys;
+package com.tcet.RestApi.repositories;
 import com.tcet.RestApi.model.JobOpening;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;

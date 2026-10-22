@@ -1,4 +1,4 @@
-package com.tcet.RestApi.modeldto;
+package com.tcet.RestApi.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;

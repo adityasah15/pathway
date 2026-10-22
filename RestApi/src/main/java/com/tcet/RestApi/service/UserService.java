@@ -1,8 +1,8 @@
 package com.tcet.RestApi.service;
 
 import com.tcet.RestApi.model.User;
-import com.tcet.RestApi.modeldto.RegisterRequestDTO;
-import com.tcet.RestApi.repositorys.UserRepository;
+import com.tcet.RestApi.dto.RegisterRequestDTO;
+import com.tcet.RestApi.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;

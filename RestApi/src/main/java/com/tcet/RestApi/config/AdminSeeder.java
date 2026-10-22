@@ -1,7 +1,7 @@
 package com.tcet.RestApi.config;
 
 import com.tcet.RestApi.model.User;
-import com.tcet.RestApi.repositorys.UserRepository;
+import com.tcet.RestApi.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

@@ -1,7 +1,7 @@
 package com.tcet.RestApi.security;
 
 import com.tcet.RestApi.model.User;
-import com.tcet.RestApi.repositorys.UserRepository;
+import com.tcet.RestApi.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

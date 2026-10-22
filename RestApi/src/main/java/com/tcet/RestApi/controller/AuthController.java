@@ -1,10 +1,10 @@
 package com.tcet.RestApi.controller;
 
 import com.tcet.RestApi.model.User;
-import com.tcet.RestApi.modeldto.AuthResponseDTO;
-import com.tcet.RestApi.modeldto.LoginRequestDTO;
-import com.tcet.RestApi.modeldto.RegisterRequestDTO;
-import com.tcet.RestApi.modeldto.UserResponseDTO;
+import com.tcet.RestApi.dto.AuthResponseDTO;
+import com.tcet.RestApi.dto.LoginRequestDTO;
+import com.tcet.RestApi.dto.RegisterRequestDTO;
+import com.tcet.RestApi.dto.UserResponseDTO;
 import com.tcet.RestApi.security.JwtService;
 import com.tcet.RestApi.service.UserService;
 import jakarta.validation.Valid;

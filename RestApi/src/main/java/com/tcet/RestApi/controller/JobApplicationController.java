@@ -1,9 +1,9 @@
 package com.tcet.RestApi.controller;
 
 import com.tcet.RestApi.model.JobApplication;
-import com.tcet.RestApi.repositorys.JobApplicationRepository;
-import com.tcet.RestApi.repositorys.JobOpeningRepository;
-import com.tcet.RestApi.repositorys.StudentRepository;
+import com.tcet.RestApi.repositories.JobApplicationRepository;
+import com.tcet.RestApi.repositories.JobOpeningRepository;
+import com.tcet.RestApi.repositories.StudentRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;

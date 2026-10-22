@@ -1,7 +1,7 @@
 package com.tcet.RestApi.controller;
 
 import com.tcet.RestApi.model.Student;
-import com.tcet.RestApi.repositorys.StudentRepository;
+import com.tcet.RestApi.repositories.StudentRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
