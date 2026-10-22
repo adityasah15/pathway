@@ -7,6 +7,19 @@
   <link rel="stylesheet" href="/dashboard.css">
 </head>
 <body>
+  <div id="login-overlay" class="login-overlay hidden">
+    <form id="login-form" class="login-card">
+      <div class="brand"><div class="brand-mark">P</div><div><strong>Pathway</strong><small>PLACEMENT PORTAL</small></div></div>
+      <div>
+        <h2>Sign in</h2>
+        <p class="muted">Use your placement workspace account.</p>
+      </div>
+      <div class="field"><label for="login-username">Username</label><input id="login-username" name="username" autocomplete="username" required></div>
+      <div class="field"><label for="login-password">Password</label><input id="login-password" name="password" type="password" autocomplete="current-password" required></div>
+      <p id="login-error" class="login-error hidden" role="alert"></p>
+      <button class="btn btn-primary" id="login-submit" type="submit">Sign in</button>
+    </form>
+  </div>
   <aside class="sidebar">
     <div class="brand"><div class="brand-mark">P</div><div><strong>Pathway</strong><small>PLACEMENT PORTAL</small></div></div>
     <div class="nav-label">WORKSPACE</div>
@@ -18,7 +31,7 @@
     <div class="sidebar-bottom"><div class="avatar">PS</div><div><strong>Placement Workspace</strong><small>Mini Project</small></div></div>
   </aside>
   <main class="main">
-    <header class="topbar"><div><div class="eyebrow">PLACEMENT INTELLIGENCE</div><h1 id="page-title">Overview</h1></div><div class="top-actions"><span class="live-dot"></span><span>Connected to application data</span><button class="btn btn-dark" id="refresh-btn">↻ Refresh</button></div></header>
+    <header class="topbar"><div><div class="eyebrow">PLACEMENT INTELLIGENCE</div><h1 id="page-title">Overview</h1></div><div class="top-actions"><span class="live-dot"></span><span id="current-user">Not signed in</span><button class="btn btn-dark" id="refresh-btn">↻ Refresh</button><button class="btn btn-secondary hidden" id="logout-btn">Sign out</button></div></header>
     <section id="notice" class="notice hidden"></section>
     <section id="dashboard-page" class="page">
       <div class="welcome"><div><div class="eyebrow light">YOUR PLACEMENT WORKSPACE</div><h2>Turn applications into opportunities.</h2><p>Track recruitment progress, organize job applications, and understand placement outcomes.</p></div><div class="welcome-icon">↗</div></div>

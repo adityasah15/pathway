@@ -1,10 +1,7 @@
-.dashboard-filters{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin:0 0 16px;padding:14px 16px}
-.dashboard-filters label{display:grid;gap:5px;color:#667087;font-size:11px;font-weight:700}
-.dashboard-filters select{min-width:145px;border:1px solid #e0e3ec;background:#fff;border-radius:8px;padding:9px 10px;color:var(--ink)}
-.dashboard-filters .btn{padding:9px 12px}
-.dashboard-filters .muted{margin-left:auto;font-size:11px;padding-bottom:9px}
-.dashboard-chart-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
-.chart-panel{min-width:0}
-.chart-container{position:relative;height:290px}
-@media(max-width:1000px){.dashboard-chart-grid{grid-template-columns:1fr}.chart-container{height:270px}}
-@media(max-width:720px){.dashboard-filters{align-items:stretch}.dashboard-filters label,.dashboard-filters select{width:100%}.dashboard-filters .muted{margin:0;padding:0}.chart-container{height:240px}}
+.login-overlay{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:24px;background:rgba(27,35,64,.55);backdrop-filter:blur(6px)}
+.login-card{width:min(400px,100%);display:grid;gap:18px;padding:28px;background:#fff;border-radius:16px;box-shadow:0 24px 60px rgba(27,35,64,.28)}
+.login-card h2{margin:0;font-size:22px}
+.login-card p{margin:4px 0 0}
+.login-card .brand{margin-bottom:4px}
+.login-error{margin:0;padding:10px 12px;border-radius:8px;background:#fdecef;color:#b02a3c;font-size:13px;font-weight:600}
+.top-actions #current-user{font-size:12px;color:var(--muted);font-weight:600}
