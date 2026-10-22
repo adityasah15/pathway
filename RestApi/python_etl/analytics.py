@@ -100,7 +100,9 @@ def _attach_reached_rank(applications: pd.DataFrame, stage_map: dict[int, set[st
 
     def reached(row) -> int:
         statuses = {str(row["status"])} | stage_map.get(int(row["application_id"]), set())
-        return max((PROGRESSION_RANK.get(status, 0) for status in statuses), default=0)
+        # Every recorded application has at least reached the Applied stage, even when
+        # its history only contains a terminal status such as Rejected or Withdrawn.
+        return max(1, max((PROGRESSION_RANK.get(status, 0) for status in statuses), default=0))
 
     applications["reached_rank"] = applications.apply(reached, axis=1)
     return applications
