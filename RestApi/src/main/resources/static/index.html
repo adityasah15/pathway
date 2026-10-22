@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pathway | Job Application & Placement Analytics</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/dashboard.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark">P</div><div><strong>Pathway</strong><small>PLACEMENT PORTAL</small></div></div>
+    <div class="nav-label">WORKSPACE</div>
+    <button class="nav-link active" data-page="dashboard"><span>▦</span> Overview</button>
+    <button class="nav-link" data-page="applications"><span>▤</span> Applications</button>
+    <button class="nav-link" data-page="students"><span>♙</span> Students</button>
+    <button class="nav-link" data-page="jobs"><span>⌕</span> Job openings</button>
+    <button class="nav-link" data-page="companies"><span>▣</span> Companies</button>
+    <div class="sidebar-bottom"><div class="avatar">PS</div><div><strong>Placement Workspace</strong><small>Mini Project</small></div></div>
+  </aside>
+  <main class="main">
+    <header class="topbar"><div><div class="eyebrow">PLACEMENT INTELLIGENCE</div><h1 id="page-title">Overview</h1></div><div class="top-actions"><span class="live-dot"></span><span>Connected to application data</span><button class="btn btn-dark" id="refresh-btn">↻ Refresh</button></div></header>
+    <section id="notice" class="notice hidden"></section>
+    <section id="dashboard-page" class="page">
+      <div class="welcome"><div><div class="eyebrow light">YOUR PLACEMENT WORKSPACE</div><h2>Turn applications into opportunities.</h2><p>Track recruitment progress, organize job applications, and understand placement outcomes.</p></div><div class="welcome-icon">↗</div></div>
+      <div class="section-heading"><div><h2>At a glance</h2><p>Live counts from your Spring Boot database</p></div><span class="pill">LIVE SUMMARY</span></div>
+      <div class="metric-grid">
+        <article class="metric"><div class="metric-top"><span>Total applications</span><span class="metric-icon purple">▤</span></div><strong id="m-applications">—</strong><small>All recorded applications</small></article>
+        <article class="metric"><div class="metric-top"><span>Reached interview</span><span class="metric-icon blue">◷</span></div><strong id="m-interviews">—</strong><small>Interview, offer, or accepted</small></article>
+        <article class="metric"><div class="metric-top"><span>Offers received</span><span class="metric-icon green">✦</span></div><strong id="m-offers">—</strong><small>Offered or accepted</small></article>
+        <article class="metric"><div class="metric-top"><span>Students</span><span class="metric-icon orange">♙</span></div><strong id="m-students">—</strong><small>Student records</small></article>
+      </div>
+      <div class="content-grid">
+        <article class="panel">
+          <div class="panel-heading"><div><h3>Application pipeline</h3><p>Current status distribution</p></div><button class="text-button" data-goto="applications">Manage applications ↗</button></div>
+          <div id="pipeline" class="pipeline"><p class="muted">Loading application records…</p></div>
+        </article>
+        <article class="panel quick-panel">
+          <div class="panel-heading"><div><h3>Quick actions</h3><p>Keep your tracker up to date</p></div></div>
+          <button class="quick-action" data-goto="applications"><span class="quick-icon purple">＋</span><span><strong>Record an application</strong><small>Add a student's application</small></span><b>›</b></button>
+          <button class="quick-action" data-goto="students"><span class="quick-icon blue">♙</span><span><strong>Add a student</strong><small>Manage student details</small></span><b>›</b></button>
+          <button class="quick-action" data-goto="jobs"><span class="quick-icon green">⌕</span><span><strong>Add a job opening</strong><small>Track a new opportunity</small></span><b>›</b></button>
+        </article>
+      </div>
+      <div class="section-heading"><div><h2>Explore placement data</h2><p>Live MySQL data cleaned and analyzed with Python and pandas. Select a chart segment or use filters to explore.</p></div></div>
+      <div class="dashboard-filters panel"><label>Department<select id="dashboard-department"><option value="">All departments</option></select></label><label>Graduation year<select id="dashboard-year"><option value="">All years</option></select></label><label>Status<select id="dashboard-status"><option value="">All statuses</option><option>Applied</option><option>Shortlisted</option><option>Interview</option><option>Offered</option><option>Accepted</option><option>Rejected</option><option>Withdrawn</option></select></label><button class="btn btn-dark" id="clear-dashboard-filters" type="button">Clear filters</button><span id="dashboard-updated" class="muted">Loading dashboard…</span></div>
+      <div class="dashboard-chart-grid">
+        <article class="panel chart-panel"><div class="panel-heading"><div><h3>Application status</h3><p>Click a slice to filter the dashboard</p></div></div><div class="chart-container"><canvas id="status-chart" aria-label="Applications by status"></canvas></div></article>
+        <article class="panel chart-panel"><div class="panel-heading"><div><h3>Department outcomes</h3><p>Applications and offers by department · click to filter</p></div></div><div class="chart-container"><canvas id="department-chart" aria-label="Applications and offers by department"></canvas></div></article>
+        <article class="panel chart-panel"><div class="panel-heading"><div><h3>Offers by company</h3><p>Companies with the most offers or acceptances</p></div></div><div class="chart-container"><canvas id="company-chart" aria-label="Offers by company"></canvas></div></article>
+        <article class="panel chart-panel"><div class="panel-heading"><div><h3>Applications over time</h3><p>Monthly application volume</p></div></div><div class="chart-container"><canvas id="monthly-chart" aria-label="Applications by month"></canvas></div></article>
+      </div>
+    </section>
+    <section id="students-page" class="page hidden"><div class="section-heading"><div><h2>Student records</h2><p>Maintain student details for placement tracking.</p></div><button class="btn btn-primary" id="add-student">＋ Add student</button></div><div id="student-form" class="panel form-panel hidden"></div><div class="panel table-panel"><div class="table-toolbar"><input id="students-search" placeholder="Search students…"><span id="students-count" class="muted"></span></div><div class="table-wrap"><table><thead><tr><th>Student</th><th>Roll no.</th><th>Department</th><th>CGPA</th><th>Graduation</th><th>Actions</th></tr></thead><tbody id="students-table"></tbody></table></div></div></section>
+    <section id="companies-page" class="page hidden"><div class="section-heading"><div><h2>Companies</h2><p>Maintain employers and organization details.</p></div><button class="btn btn-primary" id="add-company">＋ Add company</button></div><div id="company-form" class="panel form-panel hidden"></div><div class="panel table-panel"><div class="table-toolbar"><input id="companies-search" placeholder="Search companies…"><span id="companies-count" class="muted"></span></div><div class="table-wrap"><table><thead><tr><th>Company</th><th>Industry</th><th>Location</th><th>Website</th><th>Actions</th></tr></thead><tbody id="companies-table"></tbody></table></div></div></section>
+    <section id="jobs-page" class="page hidden"><div class="section-heading"><div><h2>Job openings</h2><p>Track roles, package ranges, and eligibility.</p></div><button class="btn btn-primary" id="add-job">＋ Add job</button></div><div id="job-form" class="panel form-panel hidden"></div><div class="panel table-panel"><div class="table-toolbar"><input id="jobs-search" placeholder="Search jobs…"><span id="jobs-count" class="muted"></span></div><div class="table-wrap"><table><thead><tr><th>Role</th><th>Company ID</th><th>Type</th><th>Package (LPA)</th><th>Min CGPA</th><th>Deadline</th><th>Actions</th></tr></thead><tbody id="jobs-table"></tbody></table></div></div></section>
+    <section id="applications-page" class="page hidden"><div class="section-heading"><div><h2>Application tracker</h2><p>Manage application records and recruitment status.</p></div><button class="btn btn-primary" id="add-application">＋ Record application</button></div><div id="application-form" class="panel form-panel hidden"></div><div class="panel table-panel"><div class="table-toolbar"><input id="applications-search" placeholder="Search applications…"><select id="status-filter"><option value="">All statuses</option><option>Applied</option><option>Shortlisted</option><option>Interview</option><option>Offered</option><option>Accepted</option><option>Rejected</option><option>Withdrawn</option></select><span id="applications-count" class="muted"></span></div><div class="table-wrap"><table><thead><tr><th>Application</th><th>Student ID</th><th>Job ID</th><th>Applied</th><th>Status</th><th>Interview date</th><th>Actions</th></tr></thead><tbody id="applications-table"></tbody></table></div></div></section>
+    <footer>Pathway · Job Application Management System with Placement Analytics <span>Java Spring Boot · MySQL · Python · Pandas · Docker</span></footer>
+  </main>
+  <script src="/vendor/chart.umd.min.js"></script>
+  <script src="/app.js"></script>
+</body></html>

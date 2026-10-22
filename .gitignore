@@ -1,0 +1,22 @@
+# Build output
+target/
+*.class
+*.jar
+!RestApi/.mvn/wrapper/maven-wrapper.jar
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# IDE
+.idea/
+*.iml
+
+# OS / download artifacts
+*:Zone.Identifier
+.DS_Store
+
+# Local secrets
+.env
+.env.local

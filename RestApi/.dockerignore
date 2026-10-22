@@ -1,0 +1,8 @@
+.git
+.idea
+.vscode
+target
+node_modules
+python_etl/*.csv
+python_etl/__pycache__
+*.pyc
