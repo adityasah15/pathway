@@ -1,102 +1,232 @@
 # Job Application Management System with Placement Analytics
 
-Mini-project for approved IP topic **#57: Job Application Management System**. It combines a Java Spring Boot CRUD application, MySQL storage, and a Python/Pandas analytics service powering the interactive website dashboard.
+Mini-project for approved IP topic **#57: Job Application Management System**. A Spring Boot REST API
+with JWT authentication, MySQL storage managed by Flyway, and a Python/Pandas analytics service that
+powers an interactive placement dashboard.
+
+## Architecture
+
+```text
+Browser (vanilla SPA)
+  │  /auth/login (public)
+  │  /api/**      (Bearer JWT)
+  ▼
+Spring Boot :8080 ──────────────► MySQL :3306
+  │  Flyway migrations              ▲
+  │                                 │ SQL
+  └─ /api/analytics/* ─► Flask + Pandas :5000
+```
+
+- **Spring Boot** owns the domain data, authentication, validation, status transitions, CSV proxy, and
+  serves the SPA.
+- **Flask/Pandas** reads MySQL directly, cleans and aggregates the data, and returns chart-ready JSON.
+- **MySQL** is the single source of truth. Flyway migrations create and evolve the schema.
 
 ## Features
-- Student CRUD
-- Company CRUD
-- Job-opening CRUD
-- Application CRUD and status updates
-- Duplicate application protection (one student per job opening)
-- Website summary cards and interactive application analytics dashboard
-- Python/Pandas data cleaning, filtering, and analytics
-- Docker Compose orchestration for the Spring Boot app, analytics service, and MySQL
 
-## Requirements
-- JDK 17 or later
-- Maven 3.6+ (or included Maven wrapper)
-- MySQL 8.x
-- Python 3.12+ and pip if running the analytics service outside Docker
+- JWT authentication with two roles: `ADMIN` (full CRUD) and `VIEWER` (read-only).
+- Student, company, job-opening, and application CRUD.
+- One application per student/job pair, CGPA eligibility, and deadline checks.
+- Enforced application status workflow with a full status-history table.
+- Dashboard KPIs: applications, interviews reached, offers, students, placement rate, median package.
+- Application funnel, status distribution, department outcomes, top recruiters, and monthly volume.
+- Dashboard filters by department, graduation year, and status, plus CSV export.
+- Demo dataset seeding that tops the database up to 24 students / 14 companies / 18 jobs / 80 applications.
+- Structured JSON errors, Flyway migrations, Actuator health, Docker health checks, and CI.
 
-## Run without Docker
-1. Start MySQL and create the `placement_analytics` database. Hibernate creates or updates the application tables on startup.
-2. Install the Python service dependencies:
+## Tech stack
 
-   ```powershell
-   python -m pip install -r python_etl/requirements.txt
-   ```
+| Layer | Technology |
+| --- | --- |
+| API | Java 17, Spring Boot 3, Spring Security, Spring Data JPA |
+| Database | MySQL 8.4, Flyway |
+| Analytics | Python 3.12, Flask, Pandas, PyMySQL |
+| Frontend | HTML, CSS, vanilla JavaScript, Chart.js |
+| Operations | Docker, Docker Compose, GitHub Actions |
 
-3. In a terminal, configure MySQL access and start the analytics service:
-
-   ```powershell
-   $env:DB_HOST = "localhost"
-   $env:DB_PORT = "3306"
-   $env:DB_NAME = "placement_analytics"
-   $env:DB_USERNAME = "root"
-   $env:DB_PASSWORD = "your-local-mysql-password"
-   python python_etl/analytics_app.py
-   ```
-
-4. In a second terminal in the `RestApi` folder, run `mvnw.cmd spring-boot:run` on Windows or `./mvnw spring-boot:run` on macOS/Linux. Use the same `DB_USERNAME` and `DB_PASSWORD` values for Spring Boot.
-5. Open http://localhost:8080.
-
-For the simplest setup, use Docker Compose below; it starts all three services and wires their database connection automatically.
-
-## Run with Docker
-From the `RestApi` folder, start the application and MySQL with Docker Compose:
+## Quick start with Docker
 
 ```bash
+cd RestApi
+cp .env.example .env
+# Edit .env: DB_PASSWORD, JWT_SECRET, ADMIN_PASSWORD, VIEWER_PASSWORD
 docker compose up --build
 ```
 
-Open http://localhost:8080 when the containers are running. Compose starts the Spring Boot website/API, a Python analytics service that cleans and aggregates live MySQL data with pandas, and MySQL. The overview dashboard includes live KPI cards, a clickable status doughnut chart, department applications/offers, offers by company, monthly applications, and department/year/status filters. Selecting a status slice or department bar filters the dashboard. Chart.js is served locally by the application, so the dashboard does not depend on a public chart CDN.
+Open <http://localhost:8080> and sign in. The API is healthy when:
 
-The default database password (`placement_dev_password`) is for local development only. To override it, set `DB_PASSWORD` in your environment before running Compose; use a strong secret and do not commit it. To stop the containers, press Ctrl+C and run `docker compose down`. To also permanently remove the database volume and its data, run `docker compose down -v`.
-
-## API endpoints
-| Method | Endpoint | Action |
-|---|---|---|
-| GET/POST | `/api/students` | List/create students |
-| GET/PUT/DELETE | `/api/students/{id}` | Read/update/delete student |
-| GET/POST | `/api/companies` | List/create companies |
-| GET/PUT/DELETE | `/api/companies/{id}` | Read/update/delete company |
-| GET/POST | `/api/jobs` | List/create job openings |
-| GET/PUT/DELETE | `/api/jobs/{id}` | Read/update/delete job opening |
-| GET/POST | `/api/applications` | List/create applications |
-| GET/PUT/DELETE | `/api/applications/{id}` | Read/update/delete application |
-| PATCH | `/api/applications/{id}/status` | Update status only |
-| GET | `/api/analytics/summary` | Summary counts for website cards |
-| GET | `/api/analytics/dashboard` | Pandas-backed dashboard data; accepts `department`, `graduationYear`, and `status` filters |
-
-Valid statuses: `Applied`, `Shortlisted`, `Interview`, `Offered`, `Accepted`, `Rejected`, `Withdrawn`.
-
-## Python/Pandas analytics
-The Dockerized analytics service reads the current MySQL records when the dashboard is requested. Pandas normalizes department and status labels, handles missing values, removes duplicate application IDs, and applies dashboard filters before returning KPI/chart data to Spring Boot. No CSV export or separate report refresh is needed for the website dashboard.
-
-To run the Python analytics service directly instead of using Docker, install its dependencies and configure it to connect to your MySQL instance:
-
-```powershell
-python -m pip install -r python_etl/requirements.txt
-$env:DB_HOST = "localhost"
-$env:DB_PORT = "3306"
-$env:DB_NAME = "placement_analytics"
-$env:DB_USERNAME = "root"
-$env:DB_PASSWORD = "your-local-mysql-password"
-python python_etl/analytics_app.py
+```bash
+curl http://localhost:8080/actuator/health
+# {"status":"UP"}
 ```
 
-The interactive website charts use locally hosted Chart.js; Python/Pandas cleans, filters, and aggregates their live data.
+## Run locally without Docker
 
-### PS syllabus mapping
-- Data preprocessing: Pandas duplicate removal, date conversion, missing-value handling and status standardization.
-- ETL: live MySQL extract → Pandas cleaning, normalization, filtering, and aggregation.
-- Data warehousing: application facts are combined with student, company/job, and date dimensions for dashboard analysis.
-- KPI reporting: applications, applicants, interview progression, offers, and acceptance.
-- Interactive visualization: website charts, filters, and cross-filtering.
-- Advanced analysis: company, department and job-type comparisons. Forecasting is optional and should only be used with sufficient historical data.
+Prerequisites: JDK 17, MySQL 8, Python 3.12.
 
-## Important notes
-- The website dashboard reads live MySQL data through the Dockerized analytics service.
-- The API is configured for open classroom demonstration. Do not deploy it with real personal data without proper authentication, authorization and access controls.
-- Use synthetic or anonymized student records in screenshots and presentations.
-- Interview progression calculated from the current status is only an approximation. For exact conversion over time, add an application-status-history table in a future iteration.
+1. Start MySQL. The application creates the `placement_analytics` database if it does not exist.
+2. Start the analytics service:
+
+   ```bash
+   cd RestApi
+   python3 -m venv .venv
+   source .venv/bin/activate
+   pip install -r python_etl/requirements.txt
+   python python_etl/analytics_app.py        # http://localhost:5000
+   ```
+
+3. Start Spring Boot (second terminal):
+
+   ```bash
+   cd RestApi
+   SPRING_PROFILES_ACTIVE=demo \
+   ANALYTICS_SERVICE_URL=http://localhost:5000 \
+   ./mvnw spring-boot:run
+   ```
+
+   Flyway applies the migrations on startup. Use `SPRING_PROFILES_ACTIVE=demo` to seed demo data;
+   omit it to run with only your existing records.
+
+## Demo accounts
+
+| Username | Password | Role |
+| --- | --- | --- |
+| `admin` | `ChangeMe123!` | `ADMIN` |
+| `viewer` | `viewer123` | `VIEWER` |
+
+These are development defaults. Override `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `VIEWER_USERNAME`, and
+`VIEWER_PASSWORD` before deploying anywhere. Public registration is disabled and creating users
+requires an `ADMIN` token.
+
+## Demo data
+
+The `demo` profile starts `DemoDataSeeder` (disable with `APP_DEMO_SEED=false`). It is insert-only and
+idempotent: it tops the database up to the target counts and never deletes or rewrites existing rows.
+
+| Entity | Target |
+| --- | --- |
+| Students | 24 |
+| Companies | 14 |
+| Job openings | 18 |
+| Applications | 80 |
+
+Existing records, including the original 37 applications, are preserved. A second startup with the
+same profile leaves the counts unchanged.
+
+## Configuration
+
+| Environment variable | Default | Purpose |
+| --- | --- | --- |
+| `DB_URL` | `jdbc:mysql://localhost:3306/placement_analytics?...` | JDBC connection URL |
+| `DB_USERNAME` | `root` | Database user |
+| `DB_PASSWORD` | empty | Database password |
+| `JWT_SECRET` | dev-only fallback | HMAC signing key; must be at least 32 bytes |
+| `JWT_EXPIRATION_MS` | `3600000` | Token lifetime in milliseconds |
+| `ADMIN_USERNAME` / `ADMIN_PASSWORD` | `admin` / `ChangeMe123!` | Seeded admin account |
+| `VIEWER_USERNAME` / `VIEWER_PASSWORD` | `viewer` / `viewer123` | Seeded viewer account |
+| `ANALYTICS_SERVICE_URL` | `http://localhost:5000` | Flask service used by the CSV proxy |
+| `SPRING_PROFILES_ACTIVE` | none | Set to `demo` to enable demo seeding |
+| `APP_DEMO_SEED` | `true` in the demo profile | Set to `false` to skip seeding |
+
+Generate a secret with `openssl rand -base64 48`.
+
+## API
+
+All `/api/**` routes require `Authorization: Bearer <token>`. `GET` is allowed for both roles;
+`POST`, `PUT`, and `DELETE` require `ADMIN`.
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `POST` | `/auth/login` | Public login, returns token, role, and expiry |
+| `POST` | `/auth/register` | Create a user (`ADMIN` only) |
+| `GET` | `/api/meta` | Statuses, job types, and allowed status transitions |
+| `GET` | `/api/students` | List students |
+| `GET` | `/api/students/{id}` | Get one student |
+| `POST` | `/api/students` | Create a student |
+| `PUT` | `/api/students/{id}` | Update a student |
+| `DELETE` | `/api/students/{id}` | Delete a student |
+| `GET` / `POST` / `PUT` / `DELETE` | `/api/companies[/{id}]` | Company CRUD |
+| `GET` / `POST` / `PUT` / `DELETE` | `/api/jobs[/{id}]` | Job-opening CRUD |
+| `GET` | `/api/applications?studentId=` | List applications, optionally by student |
+| `GET` | `/api/applications/{id}` | Get one application |
+| `POST` | `/api/applications` | Create an application |
+| `PUT` | `/api/applications/{id}` | Update an application |
+| `PATCH` | `/api/applications/{id}/status` | Move an application to a new status |
+| `DELETE` | `/api/applications/{id}` | Delete an application |
+| `GET` | `/api/analytics/summary` | Live entity counts |
+| `GET` | `/api/analytics/dashboard` | Filtered dashboard payload |
+| `GET` | `/api/analytics/export.csv` | Cleaned application CSV download |
+| `GET` | `/actuator/health` | Public health check |
+
+Dashboard filters: `?department=Information%20Technology&graduationYear=2027&status=Offered`.
+
+Errors use one shape:
+
+```json
+{
+  "timestamp": "2026-10-22T15:00:00Z",
+  "status": 409,
+  "code": "CONFLICT",
+  "message": "This student already applied for this job",
+  "path": "/api/applications",
+  "fieldErrors": {}
+}
+```
+
+## Application status workflow
+
+```text
+Applied ──► Shortlisted ──► Interview ──► Offered ──► Accepted
+   │             │              │            │
+   └─────────────┴──────────────┴────────────┴──────► Rejected
+   └─────────────┴──────────────┴────────────┴──────► Withdrawn
+```
+
+`Accepted`, `Rejected`, and `Withdrawn` are terminal. Status changes are validated server-side and
+written to `application_status_history` with the acting user and timestamp. The frontend reads the
+allowed transitions from `/api/meta`, so closed applications cannot be moved in the UI.
+
+Interview dates are only accepted from `Shortlisted` onward, and offer packages only for `Offered` or
+`Accepted` applications.
+
+## Database migrations
+
+Schema changes live in `src/main/resources/db/migration` and are applied by Flyway. Never edit a
+migration that has already run; add the next `V5__*.sql` file instead. Existing databases are
+baselined at `V1`, so the migrations are additive for current installations.
+
+The analytics service queries the same tables but does not own the schema.
+
+## Tests and CI
+
+```bash
+cd RestApi
+./mvnw test
+python3 -m unittest discover -s python_etl -v
+```
+
+- Spring tests run against in-memory H2 in MySQL mode; Flyway is disabled for the test profile.
+- Python tests cover cleaning, filters, history-aware funnel/KPIs, HTTP errors, and CSV export.
+- GitHub Actions runs both suites on every push and pull request.
+
+## Project structure
+
+```text
+RestApi/
+├── src/main/java/com/tcet/RestApi/   # controllers, services, repositories, security, config
+├── src/main/resources/
+│   ├── db/migration/                 # Flyway SQL
+│   └── static/                       # SPA, self-hosted fonts, Chart.js
+├── src/test/                         # Spring tests
+├── python_etl/                       # Flask + Pandas analytics and tests
+├── Dockerfile
+├── docker-compose.yml
+└── .env.example
+```
+
+## Notes and limitations
+
+- Tokens are stored in `sessionStorage`; there is no refresh-token flow or revocation list.
+- List endpoints return full tables; there is no pagination yet.
+- The analytics service runs as a single worker and holds no cache.
+- The demo seed data is deterministic and for development only.
