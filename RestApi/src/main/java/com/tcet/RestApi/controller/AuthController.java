@@ -1,19 +1,21 @@
 package com.tcet.RestApi.controller;
 
+import com.tcet.RestApi.model.User;
+import com.tcet.RestApi.modeldto.AuthResponseDTO;
 import com.tcet.RestApi.modeldto.LoginRequestDTO;
 import com.tcet.RestApi.modeldto.RegisterRequestDTO;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.web.bind.annotation.*;
-
-
-import com.tcet.RestApi.model.User;
+import com.tcet.RestApi.modeldto.UserResponseDTO;
 import com.tcet.RestApi.security.JwtService;
 import com.tcet.RestApi.service.UserService;
-
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/auth")
@@ -21,42 +23,30 @@ import lombok.RequiredArgsConstructor;
 public class AuthController {
 
     private final UserService userService;
-
     private final AuthenticationManager authenticationManager;
-
     private final JwtService jwtService;
 
-
-    // Register API
     @PostMapping("/register")
-    public ResponseEntity<User> registerUser(
-            @RequestBody RegisterRequestDTO request) {
-
+    @PreAuthorize("hasRole('ADMIN')")
+    @ResponseStatus(HttpStatus.CREATED)
+    public UserResponseDTO registerUser(@Valid @RequestBody RegisterRequestDTO request) {
         User user = userService.registerUser(request);
-
-        return new ResponseEntity<>(
-                user,
-                HttpStatus.CREATED
-        );
+        return new UserResponseDTO(user.getId(), user.getUsername(), user.getRole());
     }
 
-
-    // Login API
     @PostMapping("/login")
-    public ResponseEntity<String> login(
-            @RequestBody LoginRequestDTO request) {
+    public AuthResponseDTO login(@Valid @RequestBody LoginRequestDTO request) {
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
 
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getUsername(),
-                        request.getPassword()
-                )
-        );
+        String username = authentication.getName();
+        String role = authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .findFirst()
+                .map(authority -> authority.replace("ROLE_", ""))
+                .orElse("VIEWER");
 
-        String token = jwtService.generateToken(
-                request.getUsername()
-        );
-
-        return ResponseEntity.ok(token);
+        String token = jwtService.generateToken(username);
+        return new AuthResponseDTO(token, "Bearer", jwtService.getExpirationSeconds(), username, role);
     }
 }

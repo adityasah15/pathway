@@ -5,18 +5,22 @@ import java.io.IOException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
@@ -30,67 +34,41 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain)
             throws ServletException, IOException {
 
-
-        // Get Authorization Header
         String authHeader = request.getHeader("Authorization");
 
-
-        // Check JWT Token
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-
             filterChain.doFilter(request, response);
-
             return;
         }
 
-
-        // Extract Token
         String token = authHeader.substring(7);
 
+        try {
+            String username = jwtService.extractUsername(token);
 
-        // Extract Username
-        String username = jwtService.extractUsername(token);
+            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
+                if (jwtService.isValid(token, userDetails)) {
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(
+                                    userDetails,
+                                    null,
+                                    userDetails.getAuthorities()
+                            );
 
-        // Check if User is not already authenticated
-        if (username != null &&
-                SecurityContextHolder.getContext()
-                        .getAuthentication() == null) {
+                    authentication.setDetails(
+                            new WebAuthenticationDetailsSource().buildDetails(request)
+                    );
 
-
-            // Load User from Database
-            UserDetails userDetails =
-                    userDetailsService.loadUserByUsername(username);
-
-
-            // Validate Token
-            if (jwtService.validateToken(token)) {
-
-
-                // Create Authentication Object
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(
-                                userDetails,
-                                null,
-                                userDetails.getAuthorities()
-                        );
-
-
-                // Add Request Details
-                authentication.setDetails(
-                        new WebAuthenticationDetailsSource()
-                                .buildDetails(request)
-                );
-
-
-                // Set Authentication
-                SecurityContextHolder
-                        .getContext()
-                        .setAuthentication(authentication);
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
             }
+        } catch (JwtException | IllegalArgumentException | UsernameNotFoundException ex) {
+            SecurityContextHolder.clearContext();
+            log.debug("Rejected bearer token for {}: {}", request.getRequestURI(), ex.getMessage());
         }
 
-        // Continue Request
         filterChain.doFilter(request, response);
     }
 }
