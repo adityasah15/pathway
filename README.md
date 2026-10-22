@@ -10,13 +10,15 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/tests-38%20passing-10b981?style=flat-square" alt="38 tests passing">
+  <img src="https://img.shields.io/badge/tests-40%20passing-10b981?style=flat-square" alt="40 tests passing">
   &nbsp;
   <a href="#placement-analytics"><img src="https://img.shields.io/badge/analytics-5%20dashboard%20views-6558D9?style=flat-square" alt="5 dashboard views"></a>
   &nbsp;
   <a href="#api"><img src="https://img.shields.io/badge/API-reference-6558D9?style=flat-square" alt="API reference"></a>
   &nbsp;
-  <img src="https://img.shields.io/badge/demo%20seed-24%C2%B714%C2%B718%C2%B780-0ea5e9?style=flat-square" alt="Demo seed: 24 students, 14 companies, 18 jobs, 80 applications">
+  <img src="https://img.shields.io/badge/demo%20seed-24%C2%B715%C2%B722%C2%B786-0ea5e9?style=flat-square" alt="Demo seed: 24 students, 15 companies, 22 jobs, 86 applications">
+  &nbsp;
+  <img src="https://img.shields.io/badge/license-Personal%20Academic-38bdf8?style=flat-square" alt="Personal Academic Use License">
 </p>
 
 <p align="center">
@@ -43,10 +45,9 @@
   <a href="#what-is-pathway">Overview</a> ·
   <a href="#features">Features</a> ·
   <a href="#placement-analytics">Analytics</a> ·
-  <a href="#architecture">Architecture</a> ·
-  <a href="#application-status-workflow">Workflow</a> ·
-  <a href="#getting-started">Getting started</a> ·
+  <a href="#tech-stack">Tech stack</a> ·
   <a href="#demo-data">Demo data</a> ·
+  <a href="#getting-started">Getting started</a> ·
   <a href="#api">API</a> ·
   <a href="#documentation">Documentation</a>
 </p>
@@ -62,7 +63,7 @@ Two roles use it: **`ADMIN`** manages records and moves applications through the
 **How an application moves**
 
 1. **Record** — add a student, company, and opening, then file an application. The API checks the deadline, the student's CGPA against the job minimum, and that the student hasn't already applied to the same job.
-2. **Progress** — move through `Applied → Shortlisted → Interview → Offered → Accepted`, or close the application as `Rejected` or `Withdrawn`. Illegal transitions are rejected server-side with a `409`.
+2. **Progress** — move through `Applied → Shortlisted → Interview → Offered → Accepted`, or close the application as `Rejected` or `Withdrawn`. `Accepted`, `Rejected`, and `Withdrawn` are terminal; illegal transitions are rejected server-side with a `409`.
 3. **Audit** — every status change is written to `application_status_history` with the acting user, timestamp, and note.
 4. **Analyze** — Pandas normalizes and deduplicates the records, then builds the KPIs, funnel, department outcomes, and charts. The funnel is history-aware: an application rejected after an interview still counts as having reached that stage.
 
@@ -72,13 +73,13 @@ Two roles use it: **`ADMIN`** manages records and moves applications through the
 
 - **Four connected records** — students, companies, job openings, and applications, each with create, edit, delete, and searchable table views.
 - **Eligibility at the door** — CGPA minimums, application deadlines, and a unique student/job pair are enforced before an application is saved.
-- **One record, full context** — status, interview date, offer package, and notes live in a single record; every transition is retained in `application_status_history`.
+- **One record, full context** — status, interview date, offer package, and notes live in a single record; every transition is retained in `application_status_history` and can be viewed in the application history dialog.
 
 **Guarded workflow**
 
 - **Server-side state machine** — only legal next statuses are accepted; the UI reads the allowed transitions from `/api/meta` so closed applications cannot be moved.
 - **Stage-aware details** — interview dates are only valid from `Shortlisted` onward, and offer packages only for `Offered` and `Accepted`.
-- **Audit trail** — every transition records who changed it, when, and a note describing the change.
+- **Audit trail** — every transition records who changed it, when, and a note describing the change; the applications table exposes the timeline in a read-only history dialog.
 
 **Placement analytics**
 
@@ -92,11 +93,10 @@ Two roles use it: **`ADMIN`** manages records and moves applications through the
 - **Two roles** — `ADMIN` writes; `VIEWER` reads. Public self-registration is disabled and creating users requires an admin token.
 - **JWT security** — BCrypt passwords, signed tokens, stateless sessions, and consistent JSON `401`/`403` responses.
 - **One error shape** — validation, conflict, and not-found errors all return the same `ApiError` envelope.
-- **Demo-ready** — deterministic, insert-only seed data and a Docker Compose stack with health checks for every service.
 
 ## Placement analytics
 
-The dashboard is not a static report. On every request, Flask reads MySQL directly, loads the records into pandas, cleans and aggregates them, and returns chart-ready JSON. Spring Boot proxies the result so the browser only talks to one authenticated origin.
+On every request, Flask reads MySQL directly, loads the records into pandas, cleans and aggregates them, and returns chart-ready JSON. Spring Boot proxies the result so the browser only talks to one authenticated origin. The analytics service is read-only; all writes go through Spring Boot.
 
 ```text
 MySQL 8.4
@@ -174,64 +174,6 @@ Dashboard query example:
 /api/analytics/dashboard?department=Information%20Technology&graduationYear=2027&status=Offered
 ```
 
-The dataset is small, so the dashboard recomputes on every request instead of maintaining a cache. That keeps the numbers current at the cost of repeated reads.
-
-## Architecture
-
-Spring Boot owns the write path and serves the SPA. MySQL is the only source of truth, Flyway owns the schema, and the Flask/Pandas service reads the same tables to build chart-ready JSON. The analytics path is deliberately read-only and separate from the write path.
-
-```text
-┌──────────────────────────────────────────────────────────┐
-│                Pathway SPA · vanilla JS + Chart.js       │
-│      login · dashboard · applications · students · ...   │
-└──────────────────────────┬───────────────────────────────┘
-                           │ HTTP · Bearer JWT
-┌──────────────────────────▼───────────────────────────────┐
-│                Spring Boot 3.5 API · :8080               │
-│   auth · students · companies · jobs · applications      │
-│   status workflow · history · analytics proxy · CSV      │
-└────────────┬─────────────────────────────┬───────────────┘
-             │ JDBC                        │ HTTP
-      ┌──────▼───────┐              ┌──────▼──────────────┐
-      │  MySQL 8.4   │◄─────────────│  Flask + Pandas     │
-      │ source of    │     SQL      │  analytics · :5000  │
-      │ truth        │              │  dashboard + CSV    │
-      └──────────────┘              └─────────────────────┘
-```
-
-**Key decisions**
-
-- MySQL is the single source of truth; the analytics service never writes and does not own the schema.
-- Workflow policy lives in the enum and service layer, not in the browser or database triggers.
-- Flyway migrations are the only way the schema changes; Hibernate validates rather than generates.
-- Spring proxies dashboard and CSV requests so the SPA keeps one authenticated origin and no CORS layer is needed.
-- The SPA uses no framework or build step; fonts and Chart.js are self-hosted, so the UI has no external CDN dependency.
-- Demo seeding is opt-in by profile and insert-only, so it is safe to run against an existing database.
-
-## Application status workflow
-
-```text
-Applied ──► Shortlisted ──► Interview ──► Offered ──► Accepted
-   │             │              │            │
-   └─────────────┴──────────────┴────────────┴──────► Rejected
-   └─────────────┴──────────────┴────────────┴──────► Withdrawn
-```
-
-`Accepted`, `Rejected`, and `Withdrawn` are terminal. Status changes are validated server-side and written to `application_status_history` with the acting user, timestamp, and note. The frontend reads the allowed transitions from `/api/meta`, so closed applications cannot be moved in the UI.
-
-Interview dates are only accepted from `Shortlisted` onward, and offer packages only for `Offered` or `Accepted` applications.
-
-## Engineering highlights
-
-- **Workflow as code** — `ApplicationStatus` owns the transition graph and `ApplicationService` validates every move; invalid transitions fail with `409` even if a client bypasses the UI.
-- **History-aware analytics** — Flask loads `application_status_history` alongside applications, computes each record's furthest stage, and uses that for the funnel and the interviews/offers KPIs.
-- **Eligibility at the boundary** — deadline and CGPA checks run in the service layer; unique keys (Flyway V1) and check constraints (V3) back them up in MySQL.
-- **Migration safety** — Flyway baselines existing databases at V1 and applies V2–V4 additively; Hibernate runs with `ddl-auto=validate`, so schema drift fails fast.
-- **A read/write split that fits the scope** — Spring Boot owns writes, auth, validation, and the CSV proxy; the Flask/Pandas service is read-only over the same database. No duplicated business rules.
-- **Deterministic demo data** — a fixed random seed (`20261022`) and top-up logic produce the same 24/14/18/80 dataset on a fresh database; reruns never duplicate or delete rows.
-- **Production-shaped Docker** — multi-stage API image, non-root runtime user, health checks for MySQL, Flask, and the API, and a Gunicorn analytics container.
-- **Accessible, dependency-light SPA** — no frontend build step; self-hosted fonts and Chart.js, hash routing, a skip link, landmarks, labelled tables, visible focus states, and reduced-motion support.
-
 ## Tech stack
 
 | Layer          | Technology                                                                 |
@@ -296,11 +238,13 @@ The seeder is insert-only and idempotent: it tops the database up to the target 
 | Entity       | Target |
 | ------------ | ------ |
 | Students     | 24     |
-| Companies    | 14     |
-| Job openings | 18     |
-| Applications | 80     |
+| Companies    | 15     |
+| Job openings | 22     |
+| Applications | 86     |
 
-On a fresh database the verified demo run produces an application funnel of `80 → 45 → 32 → 17 → 7` and a `20.8%` placement rate. A second startup with the same profile leaves the counts unchanged.
+Six applications are scripted scenarios with full status histories: rejected after interview, withdrawn after offer, accepted end-to-end, stuck at `Applied`, offered pending a decision, and an upcoming interview. Four edge-case openings sit under **Atlas Manufacturing** — two expired, one closing today, and one just posted with no applicants. A null email, a null CGPA, and a whitespace/case department give the pandas cleaning path realistic data to normalise.
+
+On a fresh database the verified demo run produces an application funnel of `86 → 55 → 34 → 20 → 9` and a `29.2%` placement rate. A second startup with the same profile leaves the counts unchanged. On an existing 24/14/18/80 database the seeder adds the scripted records and edge-case openings but does not rewrite old rows, so its funnel still depends on the histories already present.
 
 To reset the demo database from scratch, remove the Compose volume first — **this deletes all local data**:
 
@@ -356,7 +300,7 @@ ANALYTICS_SERVICE_URL=http://localhost:5000 \
 ./mvnw spring-boot:run
 ```
 
-Flyway applies the migrations on startup. Use `SPRING_PROFILES_ACTIVE=demo` to seed demo data; omit it to run with only your existing records.
+Flyway applies the migrations on startup. Use `SPRING_PROFILES_ACTIVE=demo` to seed demo data; omit it to run with only your existing records. Add new schema changes as the next `V5__*.sql` file in `src/main/resources/db/migration`; never edit a migration that has already run.
 
 ## Configuration
 
@@ -395,6 +339,7 @@ All `/api/**` routes require `Authorization: Bearer <token>`. `GET` is allowed f
 | `GET` / `POST` / `PUT` / `DELETE` | `/api/jobs[/{id}]` | Job-opening CRUD |
 | `GET` | `/api/applications?studentId=` | List applications, optionally by student |
 | `GET` | `/api/applications/{id}` | Get one application |
+| `GET` | `/api/applications/{id}/history` | Get the ordered status history for one application |
 | `POST` | `/api/applications` | Create an application |
 | `PUT` | `/api/applications/{id}` | Update an application |
 | `PATCH` | `/api/applications/{id}/status` | Move an application to a new status |
@@ -419,13 +364,7 @@ Errors use one shape:
 }
 ```
 
-## Database migrations
-
-Schema changes live in `RestApi/src/main/resources/db/migration` and are applied by Flyway on startup. Never edit a migration that has already run; add the next `V5__*.sql` file instead. Existing databases are baselined at `V1`, so the migrations are additive for current installations.
-
-The analytics service queries the same tables but does not own the schema.
-
-## Testing and CI
+## Testing
 
 ```bash
 cd RestApi
@@ -433,22 +372,11 @@ cd RestApi
 python3 -m unittest discover -s python_etl -v
 ```
 
-**38 tests passing** — 28 Spring tests and 10 Python tests.
+**40 tests passing** — 30 Spring tests and 10 Python tests.
 
 - Spring tests run against in-memory H2 in MySQL mode; Flyway is disabled for the test profile. They cover student and application controllers, analytics proxying, security rules, and application startup.
 - Python tests cover record cleaning and deduplication, dashboard filters and KPIs, history-aware funnel and placement rate, HTTP error handling, CSV export, and database-aware health checks.
 - GitHub Actions runs both suites on pushes to `main` and on every pull request.
-
-## Deployment
-
-The repository ships as a Docker Compose stack rather than a hosted deployment. The API image is multi-stage, runs as a non-root user, and exposes an Actuator health check; the analytics container runs two Gunicorn workers with four threads and is not published outside the Compose network.
-
-For a real deployment:
-
-- Change every default secret, especially `JWT_SECRET`, `DB_PASSWORD`, and both seeded account passwords.
-- Terminate TLS at a reverse proxy in front of port `8080`.
-- Persist and back up the MySQL volume; the analytics service reads directly from the same database.
-- Keep `SPRING_PROFILES_ACTIVE=demo` out of production, or set `APP_DEMO_SEED=false`.
 
 ## Documentation
 
@@ -467,7 +395,7 @@ For a real deployment:
 - The analytics service recomputes each dashboard request and holds no query cache. That keeps the demo current, at the cost of repeated reads.
 - The CSV export returns the cleaned application table, not just the current dashboard filter selection.
 - `/api/analytics/summary` counts current statuses; the dashboard payload is history-aware.
-- The demo seed and default credentials are for development only. Do not use them on a public host.
+- The Compose defaults — especially `JWT_SECRET`, `DB_PASSWORD`, and both demo passwords — are for local development only. Change them before exposing the app.
 - This repository does not include a hosted demo.
 
 ## Contributing
