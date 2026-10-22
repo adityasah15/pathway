@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.test.context.support.WithMockUser;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -39,28 +40,37 @@ class JobApplicationControllerTest {
     @Autowired private CompanyRepository companies;
     @Autowired private JobOpeningRepository jobs;
     @Autowired private JobApplicationRepository applications;
+    @Autowired private com.tcet.RestApi.repositories.ApplicationStatusHistoryRepository history;
     @Autowired private com.fasterxml.jackson.databind.ObjectMapper json;
 
     private Student student(String rollNo) {
+        return student(rollNo, 8.0);
+    }
+
+    private Student student(String rollNo, double cgpa) {
         Student item = new Student();
         item.setRollNo(rollNo);
         item.setFullName("Student " + rollNo);
         item.setDepartment("Information Technology");
-        item.setCgpa(8.0);
+        item.setCgpa(cgpa);
         return students.save(item);
     }
 
     private JobOpening job(String title) {
+        return job(title, LocalDate.now().plusDays(30));
+    }
+
+    private JobOpening job(String title, LocalDate deadline) {
         Company company = new Company();
         company.setCompanyName("Company " + title);
         company = companies.save(company);
 
         JobOpening item = new JobOpening();
-        item.setCompanyId(company.getId());
+        item.setCompany(company);
         item.setJobTitle(title);
         item.setJobType("Full-time");
         item.setMinCgpa(7.0);
-        item.setDeadline(LocalDate.now().plusDays(30));
+        item.setDeadline(deadline);
         return jobs.save(item);
     }
 
@@ -86,9 +96,9 @@ class JobApplicationControllerTest {
 
         mvc.perform(patch("/api/applications/{id}/status", id)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"Interview\"}"))
+                        .content("{\"status\":\"Shortlisted\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("Interview"));
+                .andExpect(jsonPath("$.status").value("Shortlisted"));
     }
 
     @Test
@@ -146,10 +156,75 @@ class JobApplicationControllerTest {
                 .andExpect(jsonPath("$.fieldErrors.status").value("Status is required"));
     }
 
+    @Test
+    void rejectsIllegalStatusJump() throws Exception {
+        Student student = student("IT007");
+        JobOpening job = job("Architect");
+        JobApplication saved = applications.save(application(student.getId(), job.getId(), "Applied"));
+
+        mvc.perform(patch("/api/applications/{id}/status", saved.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"Offered\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(containsString("Cannot move from Applied to Offered")));
+    }
+
+    @Test
+    void rejectsStudentBelowMinimumCgpa() throws Exception {
+        Student student = student("IT008", 6.0);
+        JobOpening job = job("High Bar");
+
+        mvc.perform(post("/api/applications")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload(student.getId(), job.getId(), "Applied")))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(containsString("below the job minimum")));
+    }
+
+    @Test
+    void rejectsApplicationAfterDeadline() throws Exception {
+        Student student = student("IT009");
+        JobOpening job = job("Closed Role", LocalDate.of(2026, 9, 30));
+
+        mvc.perform(post("/api/applications")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload(student.getId(), job.getId(), "Applied")))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("The application deadline has passed"));
+    }
+
+    @Test
+    void recordsStatusHistoryForEveryChange() throws Exception {
+        Student student = student("IT011");
+        JobOpening job = job("History Role");
+
+        String created = mvc.perform(post("/api/applications")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload(student.getId(), job.getId(), "Applied")))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        long id = json.readTree(created).get("id").asLong();
+
+        mvc.perform(patch("/api/applications/{id}/status", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"Shortlisted\"}"))
+                .andExpect(status().isOk());
+        mvc.perform(patch("/api/applications/{id}/status", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"Interview\"}"))
+                .andExpect(status().isOk());
+
+        List<String> statuses = history.findByApplication_IdOrderByChangedAtAscIdAsc(id).stream()
+                .map(com.tcet.RestApi.model.ApplicationStatusHistory::getStatus)
+                .toList();
+        org.assertj.core.api.Assertions.assertThat(statuses)
+                .containsExactly("Applied", "Shortlisted", "Interview");
+    }
+
     private JobApplication application(Long studentId, Long jobId, String status) {
         JobApplication item = new JobApplication();
-        item.setStudentId(studentId);
-        item.setJobId(jobId);
+        item.setStudent(students.findById(studentId).orElseThrow());
+        item.setJob(jobs.findById(jobId).orElseThrow());
         item.setAppliedDate(LocalDate.of(2026, 10, 1));
         item.setStatus(status);
         return item;
