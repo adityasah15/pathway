@@ -1,12 +1,7 @@
+-- Schema is owned by Flyway. Migrations live in
+-- RestApi/src/main/resources/db/migration and are applied automatically on startup.
+--
+-- The application creates the database itself because the JDBC URL includes
+-- createDatabaseIfNotExist=true. Use this file only if you need to create the
+-- empty database manually:
 CREATE DATABASE IF NOT EXISTS placement_analytics;
-USE placement_analytics;
-CREATE TABLE IF NOT EXISTS students (id BIGINT PRIMARY KEY AUTO_INCREMENT, roll_no VARCHAR(30) NOT NULL UNIQUE, full_name VARCHAR(120) NOT NULL, email VARCHAR(150), department VARCHAR(80) NOT NULL, cgpa DECIMAL(4,2), graduation_year INT);
-CREATE TABLE IF NOT EXISTS companies (id BIGINT PRIMARY KEY AUTO_INCREMENT, company_name VARCHAR(140) NOT NULL UNIQUE, industry VARCHAR(100), location VARCHAR(120), website VARCHAR(220));
-CREATE TABLE IF NOT EXISTS job_openings (id BIGINT PRIMARY KEY AUTO_INCREMENT, company_id BIGINT NOT NULL, job_title VARCHAR(140) NOT NULL, job_type VARCHAR(40) NOT NULL, package_lpa DECIMAL(8,2), min_cgpa DECIMAL(4,2), posted_date DATE, deadline DATE, CONSTRAINT fk_job_company FOREIGN KEY (company_id) REFERENCES companies(id));
-CREATE TABLE IF NOT EXISTS applications (id BIGINT PRIMARY KEY AUTO_INCREMENT, student_id BIGINT NOT NULL, job_id BIGINT NOT NULL, applied_date DATE NOT NULL, status VARCHAR(30) NOT NULL DEFAULT 'Applied', interview_date DATE, offer_package_lpa DECIMAL(8,2), notes VARCHAR(500), updated_at DATETIME, CONSTRAINT fk_app_student FOREIGN KEY (student_id) REFERENCES students(id), CONSTRAINT fk_app_job FOREIGN KEY (job_id) REFERENCES job_openings(id), CONSTRAINT uk_student_job UNIQUE (student_id, job_id));
-
--- Optional demo data. Uncomment and run once if needed.
--- INSERT INTO students(roll_no,full_name,email,department,cgpa,graduation_year) VALUES ('IT001','Aarav Shah','aarav@example.com','Information Technology',8.6,2027),('IT002','Meera Patel','meera@example.com','Information Technology',9.1,2027),('CS003','Rohan Desai','rohan@example.com','Computer Engineering',7.9,2027);
--- INSERT INTO companies(company_name,industry,location,website) VALUES ('BluePeak Technologies','Software','Mumbai','https://example.com'),('Northstar Analytics','Data Analytics','Pune','https://example.com');
--- INSERT INTO job_openings(company_id,job_title,job_type,package_lpa,min_cgpa,posted_date,deadline) VALUES (1,'Java Developer','Full-time',6.5,7.0,'2026-08-01','2026-11-15'),(2,'Data Analyst Intern','Internship',2.4,7.5,'2026-08-05','2026-11-20');
--- INSERT INTO applications(student_id,job_id,applied_date,status,interview_date,offer_package_lpa) VALUES (1,1,'2026-08-10','Interview','2026-11-05',NULL),(2,2,'2026-08-12','Offered',NULL,2.4),(3,1,'2026-08-14','Rejected',NULL,NULL);
