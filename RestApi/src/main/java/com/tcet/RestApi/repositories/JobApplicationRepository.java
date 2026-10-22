@@ -28,4 +28,6 @@ public interface JobApplicationRepository extends JpaRepository<JobApplication, 
     boolean existsByStudent_IdAndJob_Id(Long studentId, Long jobId);
 
     boolean existsByStudent_IdAndJob_IdAndIdNot(Long studentId, Long jobId, Long id);
+
+    boolean existsByNotes(String notes);
 }

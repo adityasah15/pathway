@@ -619,6 +619,127 @@ tbody tr:hover {
   color: var(--ink);
   margin-bottom: 5px;
 }
+.history-dialog {
+  width: min(620px, calc(100vw - 32px));
+  max-height: min(84vh, 760px);
+  margin: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 14px;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 24px 70px #1b234033;
+  overflow: hidden;
+}
+.history-dialog::backdrop {
+  background: #1b234066;
+}
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+}
+.history-header h3 {
+  margin: 0;
+  font: 800 16px Manrope;
+}
+.history-header p {
+  margin: 4px 0 0;
+  font-size: 12px;
+}
+.history-notes {
+  color: var(--purple) !important;
+  font-weight: 700;
+}
+.history-notes:empty {
+  display: none;
+}
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 20px 24px 24px;
+  max-height: calc(84vh - 100px);
+  overflow: auto;
+}
+.history-item {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  padding-bottom: 20px;
+}
+.history-item:last-child {
+  padding-bottom: 0;
+}
+.history-item:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 16px;
+  bottom: 0;
+  width: 2px;
+  background: var(--line);
+}
+.history-dot {
+  flex: 0 0 12px;
+  width: 12px;
+  height: 12px;
+  margin-top: 3px;
+  border-radius: 50%;
+  background: #8b93a6;
+  box-shadow: 0 0 0 3px #fff;
+  z-index: 1;
+}
+.history-dot[data-status="shortlisted"],
+.history-dot[data-status="interview"] {
+  background: var(--blue);
+}
+.history-dot[data-status="offered"],
+.history-dot[data-status="accepted"] {
+  background: var(--green);
+}
+.history-dot[data-status="rejected"],
+.history-dot[data-status="withdrawn"] {
+  background: #c04c5c;
+}
+.history-content {
+  flex: 1;
+  min-width: 0;
+}
+.history-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.history-top strong {
+  font-size: 13px;
+}
+.history-top time {
+  color: var(--muted);
+  font-size: 10px;
+  white-space: nowrap;
+}
+.history-content p {
+  margin: 4px 0;
+  color: #4c556c;
+  font-size: 12px;
+}
+.history-content small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.history-loading {
+  padding: 26px 0;
+  list-style: none;
+  text-align: center;
+}
+.error-text {
+  color: #b43c4d;
+}
 .notice {
   margin-bottom: 15px;
   padding: 12px 15px;

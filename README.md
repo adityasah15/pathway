@@ -214,7 +214,6 @@ Job_Application_Management_System/
 │   ├── Dockerfile                    # production API image
 │   ├── docker-compose.yml            # mysql + analytics + app
 │   ├── .env.example                  # Docker Compose settings template
-│   └── README.md                     # full setup, config, API, workflow details
 ├── docs/
 │   ├── assets/logo.svg               # README mark
 │   └── implementation-plan.md        # phase record, tags, verification, deviations
@@ -382,7 +381,6 @@ python3 -m unittest discover -s python_etl -v
 
 | Document                                                                             | Contents                                                      |
 | ------------------------------------------------------------------------------------ | ------------------------------------------------------------- |
-| [`RestApi/README.md`](RestApi/README.md)                                             | Full setup, configuration, API reference, auth, and workflow  |
 | [`docs/implementation-plan.md`](docs/implementation-plan.md)                         | Phases, tags, commits, verification results, known deviations |
 | [`RestApi/src/main/resources/db/migration`](RestApi/src/main/resources/db/migration) | Flyway migrations V1–V4                                       |
 | [`RestApi/sql/schema.sql`](RestApi/sql/schema.sql)                                   | Manual database creation helper (Flyway owns the schema)      |

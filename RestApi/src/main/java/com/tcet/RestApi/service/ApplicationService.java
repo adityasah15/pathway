@@ -1,5 +1,6 @@
 package com.tcet.RestApi.service;
 
+import com.tcet.RestApi.dto.ApplicationHistoryResponse;
 import com.tcet.RestApi.dto.ApplicationRequest;
 import com.tcet.RestApi.dto.ApplicationResponse;
 import com.tcet.RestApi.model.ApplicationStatus;
@@ -51,6 +52,19 @@ public class ApplicationService {
 
     public ApplicationResponse findOne(Long id) {
         return toResponse(get(id));
+    }
+
+    public List<ApplicationHistoryResponse> findHistory(Long id) {
+        get(id);
+        return history.findByApplication_IdOrderByChangedAtAscIdAsc(id).stream()
+                .map(item -> new ApplicationHistoryResponse(
+                        item.getId(),
+                        id,
+                        item.getStatus(),
+                        item.getChangedAt(),
+                        item.getChangedBy(),
+                        item.getNote()))
+                .toList();
     }
 
     @Transactional

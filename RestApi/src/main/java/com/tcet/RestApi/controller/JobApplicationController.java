@@ -1,5 +1,6 @@
 package com.tcet.RestApi.controller;
 
+import com.tcet.RestApi.dto.ApplicationHistoryResponse;
 import com.tcet.RestApi.dto.ApplicationRequest;
 import com.tcet.RestApi.dto.ApplicationResponse;
 import com.tcet.RestApi.service.ApplicationService;
@@ -26,6 +27,11 @@ public class JobApplicationController {
     @GetMapping("/{id}")
     public ApplicationResponse one(@PathVariable Long id) {
         return service.findOne(id);
+    }
+
+    @GetMapping("/{id}/history")
+    public List<ApplicationHistoryResponse> history(@PathVariable Long id) {
+        return service.findHistory(id);
     }
 
     @PostMapping

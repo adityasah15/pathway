@@ -6,6 +6,11 @@
 - **Execution:** sequential phases, one logical commit at a time, tagged at phase boundaries
 - **Repository:** local only; nothing has been pushed
 
+> **Historical record:** this plan captures the Phase 0–7 baseline. The current
+> working tree adds the application-history API/UI and a 24-student / 15-company /
+> 22-job / 86-application demo seed. The verification table below is the original
+> baseline, not the current one; see the root `README.md` and `PROJECT_GUIDE.md`.
+
 ## Goals and constraints
 
 1. Enforce authentication instead of leaving the JWT stack as decoration:

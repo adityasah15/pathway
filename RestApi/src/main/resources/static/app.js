@@ -389,8 +389,53 @@ async function loadDashboard() {
   }
 }
 function actionButtons(type, id) {
-  if (!canWrite()) return '<span class="muted">Read only</span>';
-  return `<div class="row-actions"><button class="icon-btn" data-edit="${type}" data-id="${id}">Edit</button><button class="icon-btn" data-delete="${type}" data-id="${id}">Delete</button></div>`;
+  const historyButton =
+    type === "application"
+      ? `<button class="icon-btn" data-history="${id}">History</button>`
+      : "";
+  if (!canWrite())
+    return `<div class="row-actions">${historyButton}<span class="muted">Read only</span></div>`;
+  return `<div class="row-actions">${historyButton}<button class="icon-btn" data-edit="${type}" data-id="${id}">Edit</button><button class="icon-btn" data-delete="${type}" data-id="${id}">Delete</button></div>`;
+}
+function formatTimestamp(value) {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+}
+async function showHistory(id) {
+  const dialog = $("history-dialog");
+  const application = state.applications.find((item) => item.id === id);
+  $("history-title").textContent = `APP-${String(id).padStart(4, "0")}`;
+  $("history-subtitle").textContent = application
+    ? `${application.studentName || studentName(application.studentId)} · ${application.jobTitle || jobName(application.jobId)} · ${application.status}`
+    : "";
+  $("history-notes").textContent = application?.notes || "";
+  $("history-list").innerHTML =
+    '<li class="history-loading muted">Loading history…</li>';
+  if (!dialog.open) {
+    if (typeof dialog.showModal === "function") dialog.showModal();
+    else dialog.setAttribute("open", "");
+  }
+  try {
+    const entries = await request(`/applications/${id}/history`);
+    $("history-list").innerHTML = entries.length
+      ? entries
+          .map(
+            (entry) => `
+        <li class="history-item">
+          <span class="history-dot" data-status="${esc(entry.status.toLowerCase())}" aria-hidden="true"></span>
+          <div class="history-content">
+            <div class="history-top"><strong>${esc(entry.status)}</strong><time datetime="${esc(entry.changedAt)}">${esc(formatTimestamp(entry.changedAt))}</time></div>
+            <p>${esc(entry.note || "Status updated")}</p>
+            <small>${esc(entry.changedBy || "system")}</small>
+          </div>
+        </li>`,
+          )
+          .join("")
+      : '<li class="history-loading muted">No status history recorded yet.</li>';
+  } catch (error) {
+    $("history-list").innerHTML = `<li class="history-loading error-text">${esc(error.message)}</li>`;
+  }
 }
 function renderStudents() {
   const q = ($("students-search")?.value || "").toLowerCase();
@@ -683,6 +728,11 @@ $("clear-dashboard-filters").addEventListener("click", () => {
   loadDashboard();
 });
 document.addEventListener("click", (e) => {
+  const historyButton = e.target.closest("[data-history]");
+  if (historyButton) {
+    showHistory(Number(historyButton.dataset.history));
+    return;
+  }
   const edit = e.target.closest("[data-edit]");
   if (edit) {
     const type = edit.dataset.edit,
@@ -749,6 +799,16 @@ $("logout-btn").addEventListener("click", () => {
   endSession();
   applyRole();
   showLogin();
+});
+$("history-dialog").addEventListener("click", (event) => {
+  if (
+    event.target === $("history-dialog") ||
+    event.target.closest("[data-close-history]")
+  ) {
+    const dialog = $("history-dialog");
+    if (typeof dialog.close === "function") dialog.close();
+    else dialog.removeAttribute("open");
+  }
 });
 $("export-csv").addEventListener("click", async () => {
   try {

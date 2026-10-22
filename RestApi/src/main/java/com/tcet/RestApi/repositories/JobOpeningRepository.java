@@ -22,4 +22,6 @@ public interface JobOpeningRepository extends JpaRepository<JobOpening, Long> {
     @EntityGraph(attributePaths = "company")
     @Query("select j from JobOpening j where j.id = :id")
     Optional<JobOpening> findDetailedById(@Param("id") Long id);
+
+    boolean existsByCompany_CompanyNameIgnoreCaseAndJobTitleIgnoreCase(String companyName, String jobTitle);
 }

@@ -31,7 +31,7 @@ Spring Boot :8080 ──────────────► MySQL :3306
 - Dashboard KPIs: applications, interviews reached, offers, students, placement rate, median package.
 - Application funnel, status distribution, department outcomes, top recruiters, and monthly volume.
 - Dashboard filters by department, graduation year, and status, plus CSV export.
-- Demo dataset seeding that tops the database up to 24 students / 14 companies / 18 jobs / 80 applications.
+- Demo dataset seeding that tops the database up to 24 students / 15 companies / 22 jobs / 86 applications, including scripted histories and edge-case openings.
 - Structured JSON errors, Flyway migrations, Actuator health, Docker health checks, and CI.
 
 ## Tech stack
@@ -106,12 +106,19 @@ idempotent: it tops the database up to the target counts and never deletes or re
 | Entity | Target |
 | --- | --- |
 | Students | 24 |
-| Companies | 14 |
-| Job openings | 18 |
-| Applications | 80 |
+| Companies | 15 |
+| Job openings | 22 |
+| Applications | 86 |
+
+Six applications carry scripted, multi-step histories: rejected after interview, withdrawn after offer,
+accepted end-to-end, stuck at `Applied`, offered pending a decision, and an upcoming interview. Four
+edge-case openings live under **Atlas Manufacturing** — two expired, one closing today, and one just
+posted with no applicants. The seed also contains a null email, a null CGPA, and a whitespace/case
+department for the pandas cleaning path.
 
 Existing records, including the original 37 applications, are preserved. A second startup with the
-same profile leaves the counts unchanged.
+same profile leaves the counts unchanged. On an older 24/14/18/80 database the seeder adds the
+scripted records and edge-case openings without rewriting existing rows.
 
 ## Configuration
 
@@ -149,6 +156,7 @@ All `/api/**` routes require `Authorization: Bearer <token>`. `GET` is allowed f
 | `GET` / `POST` / `PUT` / `DELETE` | `/api/jobs[/{id}]` | Job-opening CRUD |
 | `GET` | `/api/applications?studentId=` | List applications, optionally by student |
 | `GET` | `/api/applications/{id}` | Get one application |
+| `GET` | `/api/applications/{id}/history` | Ordered status history for one application |
 | `POST` | `/api/applications` | Create an application |
 | `PUT` | `/api/applications/{id}` | Update an application |
 | `PATCH` | `/api/applications/{id}/status` | Move an application to a new status |

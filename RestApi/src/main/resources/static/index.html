@@ -74,6 +74,13 @@
     <section id="applications-page" class="page hidden"><div class="section-heading"><div><h2>Application tracker</h2><p>Manage application records and recruitment status.</p></div><button class="btn btn-primary" id="add-application">＋ Record application</button></div><div id="application-form" class="panel form-panel hidden"></div><div class="panel table-panel"><div class="table-toolbar"><input id="applications-search" placeholder="Search applications…"><select id="status-filter"><option value="">All statuses</option><option>Applied</option><option>Shortlisted</option><option>Interview</option><option>Offered</option><option>Accepted</option><option>Rejected</option><option>Withdrawn</option></select><span id="applications-count" class="muted"></span></div><div class="table-wrap"><table aria-label="Applications"><thead><tr><th>Application</th><th>Student ID</th><th>Job ID</th><th>Applied</th><th>Status</th><th>Interview date</th><th>Actions</th></tr></thead><tbody id="applications-table"></tbody></table></div></div></section>
     <footer>Pathway · Job Application Management System with Placement Analytics <span>Java Spring Boot · MySQL · Python · Pandas · Docker</span></footer>
   </main>
+  <dialog id="history-dialog" class="history-dialog" aria-labelledby="history-title">
+    <div class="history-header">
+      <div><h3 id="history-title">Application history</h3><p id="history-subtitle" class="muted"></p><p id="history-notes" class="history-notes"></p></div>
+      <button class="icon-btn" type="button" data-close-history>✕ Close</button>
+    </div>
+    <ol id="history-list" class="history-list" aria-live="polite"></ol>
+  </dialog>
   <script src="/vendor/chart.umd.min.js"></script>
   <script src="/app.js"></script>
 </body></html>

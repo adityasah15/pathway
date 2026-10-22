@@ -21,6 +21,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import java.time.LocalDate;
 import java.util.List;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -219,6 +220,39 @@ class JobApplicationControllerTest {
                 .toList();
         org.assertj.core.api.Assertions.assertThat(statuses)
                 .containsExactly("Applied", "Shortlisted", "Interview");
+    }
+
+    @Test
+    void returnsStatusHistoryInChronologicalOrder() throws Exception {
+        Student student = student("IT012");
+        JobOpening job = job("History API Role");
+
+        String created = mvc.perform(post("/api/applications")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload(student.getId(), job.getId(), "Applied")))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        long id = json.readTree(created).get("id").asLong();
+
+        mvc.perform(patch("/api/applications/{id}/status", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"Shortlisted\"}"))
+                .andExpect(status().isOk());
+
+        mvc.perform(get("/api/applications/{id}/history", id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].status").value("Applied"))
+                .andExpect(jsonPath("$[1].status").value("Shortlisted"))
+                .andExpect(jsonPath("$[0].changedBy").value("admin"))
+                .andExpect(jsonPath("$[0].changedAt").exists());
+    }
+
+    @Test
+    void returnsNotFoundForHistoryOfMissingApplication() throws Exception {
+        mvc.perform(get("/api/applications/{id}/history", 999999))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("NOT_FOUND"));
     }
 
     private JobApplication application(Long studentId, Long jobId, String status) {
