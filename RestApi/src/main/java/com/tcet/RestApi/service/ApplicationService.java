@@ -84,6 +84,7 @@ public class ApplicationService {
         ApplicationStatus currentStatus = parseStatus(item.getStatus());
 
         validateTransition(currentStatus, nextStatus);
+        validateEligibility(student, job, request.appliedDate());
         validateDetails(nextStatus, request.interviewDate(), request.offerPackageLpa());
 
         if (applications.existsByStudent_IdAndJob_IdAndIdNot(student.getId(), job.getId(), id)) {
