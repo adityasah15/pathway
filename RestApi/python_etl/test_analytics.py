@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import patch
 
+import pymysql
 from analytics import build_dashboard, clean_records
 from analytics_app import app
 
@@ -166,6 +167,25 @@ class DashboardAnalyticsTests(unittest.TestCase):
         body = response.get_data(as_text=True)
         self.assertIn("application_id", body)
         self.assertIn("Offered", body)
+
+    def test_health_endpoint_checks_the_database(self):
+        with patch("analytics_app._connect") as connect:
+            response = app.test_client().get("/health")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json, {"status": "ok"})
+        connect.return_value.cursor.return_value.__enter__.return_value.execute.assert_called_once_with(
+            "SELECT 1"
+        )
+
+    def test_health_endpoint_reports_an_unavailable_database(self):
+        with patch("analytics_app._connect", side_effect=pymysql.MySQLError("down")), patch(
+            "analytics_app.logger"
+        ):
+            response = app.test_client().get("/health")
+
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.json, {"status": "unavailable"})
 
     def test_empty_dataset_returns_empty_chart_series(self):
         report = build_dashboard([])

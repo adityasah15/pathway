@@ -228,5 +228,5 @@ RestApi/
 
 - Tokens are stored in `sessionStorage`; there is no refresh-token flow or revocation list.
 - List endpoints return full tables; there is no pagination yet.
-- The analytics service runs as a single worker and holds no cache.
+- The analytics service runs two Gunicorn workers and holds no query cache.
 - The demo seed data is deterministic and for development only.

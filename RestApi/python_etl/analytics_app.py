@@ -74,7 +74,17 @@ def load_records() -> list[dict]:
 
 @app.get("/health")
 def health():
-    return jsonify({"status": "ok"})
+    try:
+        connection = _connect()
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT 1")
+        finally:
+            connection.close()
+        return jsonify({"status": "ok"})
+    except pymysql.MySQLError:
+        logger.exception("Health check could not reach MySQL")
+        return jsonify({"status": "unavailable"}), 503
 
 
 @app.get("/dashboard")
