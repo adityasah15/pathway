@@ -2,6 +2,9 @@ package com.tcet.RestApi.controller;
 
 import com.tcet.RestApi.repositories.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.bind.annotation.*;
 import java.util.LinkedHashMap;
@@ -49,5 +52,18 @@ public class AnalyticsController {
                 })
                 .retrieve()
                 .body(Object.class);
+    }
+
+    @GetMapping(value = "/export.csv", produces = "text/csv")
+    public ResponseEntity<byte[]> exportCsv() {
+        byte[] csv = analyticsRestClient.get()
+                .uri("/export.csv")
+                .retrieve()
+                .body(byte[].class);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("text/csv"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=applications.csv")
+                .body(csv == null ? new byte[0] : csv);
     }
 }

@@ -76,8 +76,70 @@ class DashboardAnalyticsTests(unittest.TestCase):
         self.assertEqual(report["summary"]["students"], 3)
         self.assertEqual(report["summary"]["applications"], 2)
 
+    def test_status_history_is_used_for_the_funnel_and_placement_rate(self):
+        records = [
+            {
+                "application_id": 1,
+                "applied_date": "2026-01-10",
+                "status": "Offered",
+                "student_id": 10,
+                "department": "IT",
+                "graduation_year": 2027,
+                "job_type": "Full-time",
+                "company_name": "Acme",
+                "offer_package_lpa": 8.0,
+            },
+            {
+                "application_id": 2,
+                "applied_date": "2026-02-10",
+                "status": "Accepted",
+                "student_id": 11,
+                "department": "IT",
+                "graduation_year": 2027,
+                "job_type": "Full-time",
+                "company_name": "Acme",
+                "offer_package_lpa": 12.0,
+            },
+            {
+                "application_id": 3,
+                "applied_date": "2026-03-10",
+                "status": "Rejected",
+                "student_id": 12,
+                "department": "IT",
+                "graduation_year": 2027,
+                "job_type": "Full-time",
+                "company_name": "Beta",
+                "offer_package_lpa": None,
+            },
+        ]
+        history = [
+            {"application_id": 3, "status": "Applied"},
+            {"application_id": 3, "status": "Shortlisted"},
+            {"application_id": 3, "status": "Interview"},
+        ]
+
+        report = build_dashboard(records, history=history)
+
+        self.assertEqual(
+            report["funnel"],
+            [
+                {"stage": "Applied", "count": 3},
+                {"stage": "Shortlisted", "count": 3},
+                {"stage": "Interview", "count": 3},
+                {"stage": "Offered", "count": 2},
+                {"stage": "Accepted", "count": 1},
+            ],
+        )
+        self.assertEqual(report["summary"]["interviews"], 3)
+        self.assertEqual(report["summary"]["offers"], 2)
+        self.assertEqual(report["summary"]["accepted"], 1)
+        self.assertEqual(report["placementRate"], 33.3)
+        self.assertEqual(report["medianPackage"], 10.0)
+        self.assertEqual(report["highestPackage"], 12.0)
+        self.assertEqual(report["topRecruiter"], "Acme")
+
     def test_http_endpoint_returns_filtered_dashboard(self):
-        with patch("analytics_app.load_records", return_value=self.records):
+        with patch("analytics_app.load_data", return_value=(self.records, [])):
             response = app.test_client().get(
                 "/dashboard?department=Information%20Technology&graduationYear=2027"
             )
@@ -91,11 +153,32 @@ class DashboardAnalyticsTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 400)
 
+    def test_http_endpoint_returns_csv_export(self):
+        with patch("analytics_app.load_data", return_value=(self.records, [])):
+            response = app.test_client().get("/export.csv")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("text/csv", response.content_type)
+        self.assertEqual(
+            response.headers["Content-Disposition"],
+            "attachment; filename=applications.csv",
+        )
+        body = response.get_data(as_text=True)
+        self.assertIn("application_id", body)
+        self.assertIn("Offered", body)
+
     def test_empty_dataset_returns_empty_chart_series(self):
         report = build_dashboard([])
 
         self.assertEqual(report["summary"]["applications"], 0)
         self.assertTrue(all(item["count"] == 0 for item in report["statusDistribution"]))
+        self.assertEqual(report["funnel"], [
+            {"stage": "Applied", "count": 0},
+            {"stage": "Shortlisted", "count": 0},
+            {"stage": "Interview", "count": 0},
+            {"stage": "Offered", "count": 0},
+            {"stage": "Accepted", "count": 0},
+        ])
         self.assertEqual(report["departmentStats"], [])
         self.assertEqual(report["companyOffers"], [])
 

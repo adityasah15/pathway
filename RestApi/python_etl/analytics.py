@@ -15,6 +15,9 @@ STATUSES = [
     "Unknown",
 ]
 
+PROGRESSION = ["Applied", "Shortlisted", "Interview", "Offered", "Accepted"]
+PROGRESSION_RANK = {status: index for index, status in enumerate(PROGRESSION, start=1)}
+
 RECORD_COLUMNS = [
     "application_id",
     "applied_date",
@@ -36,7 +39,7 @@ def clean_records(records: list[dict]) -> tuple[pd.DataFrame, pd.DataFrame]:
             frame[column] = pd.NA
 
     frame = frame[RECORD_COLUMNS].copy()
-    frame["application_id"] = pd.to_numeric(frame["application_id"], errors="coerce")
+    frame["application_id"] = pd.to_numeric(frame["application_id"], errors="coerce").astype("Int64")
 
     for column in ["department", "company_name", "job_type"]:
         values = frame[column].astype("string").str.strip().str.replace(r"\s+", " ", regex=True)
@@ -74,11 +77,41 @@ def clean_records(records: list[dict]) -> tuple[pd.DataFrame, pd.DataFrame]:
     return applications, students
 
 
+def _stage_lookup(history: list[dict] | None) -> dict[int, set[str]]:
+    """Map application id to every status it has ever held."""
+    stages: dict[int, set[str]] = {}
+    for row in history or []:
+        try:
+            application_id = int(row.get("application_id"))
+        except (TypeError, ValueError):
+            continue
+        status = row.get("status")
+        if status is None or (isinstance(status, float) and pd.isna(status)):
+            continue
+        stages.setdefault(application_id, set()).add(str(status))
+    return stages
+
+
+def _attach_reached_rank(applications: pd.DataFrame, stage_map: dict[int, set[str]]) -> pd.DataFrame:
+    applications = applications.copy()
+    if applications.empty:
+        applications["reached_rank"] = pd.Series(dtype="int64")
+        return applications
+
+    def reached(row) -> int:
+        statuses = {str(row["status"])} | stage_map.get(int(row["application_id"]), set())
+        return max((PROGRESSION_RANK.get(status, 0) for status in statuses), default=0)
+
+    applications["reached_rank"] = applications.apply(reached, axis=1)
+    return applications
+
+
 def build_dashboard(
     records: list[dict],
     department: str | None = None,
     graduation_year: int | None = None,
     status: str | None = None,
+    history: list[dict] | None = None,
 ) -> dict:
     """Aggregate cleaned records for the website's dashboard and filter controls."""
     applications, students = clean_records(records)
@@ -109,6 +142,8 @@ def build_dashboard(
         filtered_applications = filtered_applications.loc[
             filtered_applications["status"].str.casefold() == status.strip().casefold()
         ]
+
+    filtered_applications = _attach_reached_rank(filtered_applications, _stage_lookup(history))
 
     status_counts = (
         filtered_applications.groupby("status").size().to_dict()
@@ -157,8 +192,25 @@ def build_dashboard(
             for month, count in monthly_counts.items()
         ]
 
+    reached = filtered_applications["reached_rank"]
+    funnel = [
+        {
+            "stage": stage,
+            "count": int((reached >= rank).sum()),
+        }
+        for stage, rank in PROGRESSION_RANK.items()
+    ]
+
     status_series = filtered_applications["status"]
-    offers = status_series.isin(["Offered", "Accepted"])
+    accepted_students = int(
+        filtered_applications.loc[status_series == "Accepted", "student_id"].nunique()
+    )
+    student_count = int(filtered_students["student_id"].nunique())
+
+    package_rows = offer_rows["offer_package_lpa"].dropna()
+    median_package = round(float(package_rows.median()), 2) if not package_rows.empty else 0.0
+    highest_package = round(float(package_rows.max()), 2) if not package_rows.empty else 0.0
+
     return {
         "filters": {"departments": departments, "graduationYears": graduation_years},
         "selectedFilters": {
@@ -167,13 +219,18 @@ def build_dashboard(
             "status": status or "",
         },
         "summary": {
-            "students": int(filtered_students["student_id"].nunique()),
+            "students": student_count,
             "applications": int(len(filtered_applications)),
-            "interviews": int(status_series.isin(["Interview", "Offered", "Accepted"]).sum()),
-            "offers": int(offers.sum()),
+            "interviews": int((reached >= PROGRESSION_RANK["Interview"]).sum()),
+            "offers": int((reached >= PROGRESSION_RANK["Offered"]).sum()),
             "accepted": int(status_series.eq("Accepted").sum()),
             "companies": int(filtered_applications["company_name"].nunique()),
         },
+        "placementRate": round(accepted_students / student_count * 100, 1) if student_count else 0.0,
+        "medianPackage": median_package,
+        "highestPackage": highest_package,
+        "topRecruiter": company_offers[0]["company"] if company_offers else None,
+        "funnel": funnel,
         "statusDistribution": status_distribution,
         "departmentStats": department_rows,
         "companyOffers": company_offers,

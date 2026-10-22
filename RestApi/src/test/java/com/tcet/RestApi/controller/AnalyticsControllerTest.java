@@ -12,6 +12,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.http.HttpHeaders;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -19,7 +20,10 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -43,6 +47,14 @@ class AnalyticsControllerTest {
                 lastQuery = exchange.getRequestURI().getQuery();
                 byte[] body = "{\"summary\":{\"applications\":1}}".getBytes(StandardCharsets.UTF_8);
                 exchange.getResponseHeaders().add("Content-Type", "application/json");
+                exchange.sendResponseHeaders(200, body.length);
+                try (OutputStream output = exchange.getResponseBody()) {
+                    output.write(body);
+                }
+            });
+            analyticsServer.createContext("/export.csv", exchange -> {
+                byte[] body = "application_id,status\n1,Offered\n".getBytes(StandardCharsets.UTF_8);
+                exchange.getResponseHeaders().add("Content-Type", "text/csv");
                 exchange.sendResponseHeaders(200, body.length);
                 try (OutputStream output = exchange.getResponseBody()) {
                     output.write(body);
@@ -86,5 +98,15 @@ class AnalyticsControllerTest {
                 .andExpect(status().isOk());
 
         assertThat(lastQuery).isNull();
+    }
+
+    @Test
+    void proxiesCsvExport() throws Exception {
+        mvc.perform(get("/api/analytics/export.csv"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith("text/csv"))
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=applications.csv"))
+                .andExpect(content().string(containsString("application_id")));
     }
 }
