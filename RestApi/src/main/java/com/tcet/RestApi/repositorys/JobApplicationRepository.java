@@ -6,4 +6,5 @@ public interface JobApplicationRepository extends JpaRepository<JobApplication, 
     List<JobApplication> findByStudentId(Long studentId);
     long countByStatusIgnoreCase(String status);
     boolean existsByStudentIdAndJobId(Long studentId, Long jobId);
+    boolean existsByStudentIdAndJobIdAndIdNot(Long studentId, Long jobId, Long id);
 }
